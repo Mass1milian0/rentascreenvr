@@ -4,11 +4,6 @@ import { readFiles } from 'h3-formidable'
 import * as fs from 'fs/promises';
 import ffmpeg from 'fluent-ffmpeg';
 ffmpeg.setFfmpegPath('/usr/bin/ffmpeg');
-import * as path from 'path';
-import { createWriteStream } from 'fs';
-
-// Keep track of uploaded chunks for each file
-const uploadedChunks: { [key: string]: Set<number> } = {};
 
 export default defineEventHandler(async (event) => {
     const client = await serverSupabaseClient<Database>(event)
@@ -18,8 +13,7 @@ export default defineEventHandler(async (event) => {
     //@ts-ignore
     const { files, fields } = await readFiles(event, { maxFileSize: 5 * 1024 * 1024 * 1024 })
     const screen_id = fields.screenId
-    const chunkIndex = fields.chunkIndex
-    const isCanceled = fields.isCanceled
+
 
     if (!screen_id) {
         return { msg: 'screen_id is required', status: 400 }
@@ -42,6 +36,7 @@ export default defineEventHandler(async (event) => {
         return { msg: 'screen not found', status: 400 }
     }
 
+
     //check if there are files
     if (!files) {
         return { msg: 'no files found', status: 400 }
@@ -59,33 +54,64 @@ export default defineEventHandler(async (event) => {
         }
         await fs.mkdir(`./screens/${screen_id}`)
     }
+
+    //if there is anything in the folder delete it
+    const filesInFolder = await fs.readdir(`./screens/${screen_id}`)
+    for (const file of filesInFolder) {
+        try {
+            await fs.unlink(`./screens/${screen_id}/${file}`)
+        } catch (error) {
+            //if it fails to delete the file, try again max 3 times waiting 5 seconds between each try
+            for (let i = 0; i < 3; i++) {
+                try {
+                    await fs.unlink(`./screens/${screen_id}/${file}`)
+                    break
+                } catch (error) {
+                    await new Promise<void>((resolve) => {
+                        setTimeout(() => {
+                            resolve()
+                        }, 5000)
+                    })
+                    if(i === 2) return { msg: 'failed to delete file', status: 500 }
+                }
+            }           
+        }
+    }
+    //only 1 file is allowed
+    if (files.file.length > 1) {
+        return { msg: 'only 1 file is allowed', status: 400 }
+    }
+
     const file = files.file[0]
 
-    // If the upload is canceled, delete the temporary file and the record of uploaded chunks
-    if (isCanceled) {
-        const tempFilePath = path.join(process.cwd(), `/screens/${screen_id}/temp.mp4`);
-        await fs.unlink(tempFilePath);
-        delete uploadedChunks[screen_id];
-        return { status: 200, msg: 'Upload canceled' };
-    }
-
-    // Append chunk to temporary file
-    const tempFilePath = path.join(process.cwd(), `/screens/${screen_id}/temp.mp4`);
-    const writeStream = createWriteStream(tempFilePath, { flags: 'a' });
-    writeStream.write(file);
-    writeStream.end();
-
-    // Record that this chunk has been uploaded
-    if (!uploadedChunks[screen_id]) {
-        uploadedChunks[screen_id] = new Set();
-    }
-    uploadedChunks[screen_id].add(chunkIndex);
-
-    // If this is the last chunk, rename the temporary file to the final file name
-    if (chunkIndex === fields.totalChunks - 1 && uploadedChunks[screen_id].size === fields.totalChunks) {
-        const finalFilePath = path.join(process.cwd(), `/screens/${screen_id}/video.mp4`);
-        await fs.rename(tempFilePath, finalFilePath);
-        delete uploadedChunks[screen_id];
+    //convert whatever video format to mp4
+    //if not mp4
+    if (file.originalFilename.split('.').pop() !== 'mp4'){
+        await new Promise<void>((resolve, reject) => {
+            ffmpeg(file.filepath)
+                .outputOptions('-f', 'mp4') //high quality
+                .outputOptions('-c:v', 'libx264') //high quality
+                .outputOptions('-preset', 'slow') //high quality
+                .outputOptions('-crf', '18') //high quality
+                .outputOptions('-c:a', 'aac') //high quality
+                .outputOptions('-b:a', '192k') //high quality
+                .outputOptions('-movflags', 'faststart') //high quality
+                .outputOptions('-vf', 'scale=1280:720') //high quality
+                .outputOptions('-r', '30') //high quality
+                .outputOptions('-pix_fmt', 'yuv420p') //high quality
+                .outputOptions('-profile:v', 'main') //high quality
+                .outputOptions('-level', '3.1') //high quality
+                .on('end', () => {
+                    resolve()
+                })
+                .on('error', (err: any) => {
+                    reject(err)
+                })
+                .save(process.cwd() + `/screens/${screen_id}/video.mp4`)
+        })
+    }else {
+        //move the file to the screen folder
+        await fs.rename(file.filepath, process.cwd() + `/screens/${screen_id}/video.mp4`)
     }
 
     return { status: 200 }

@@ -61,6 +61,7 @@ function triggerFileInput() {
 
 async function handleFile(event: Event) {
     const input = fileInput.value as HTMLInputElement;
+    //only 1 file is allowed and it must be a video of any type
     if (input.files && input.files.length > 0) {
         if (input.files.length > 1) {
             alert("Only one file is allowed")
@@ -71,56 +72,39 @@ async function handleFile(event: Event) {
             return;
         }
         const file = input.files[0];
-        const chunkSize = 1024 * 1024 * 5; // 5MB
-        const totalChunks = Math.ceil(file.size / chunkSize);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('screenId', props?.screenId ?? '');
         showUpload.value = false;
         uploading.value = true;
-        for (let i = 0; i < totalChunks; i++) {
-            let retries = 3;
-            while (retries > 0) {
-                try {
-                    const blob = file.slice(i * chunkSize, (i + 1) * chunkSize);
-                    const formData = new FormData();
-                    formData.append('file', blob, `${i}`);
-                    formData.append('screenId', props?.screenId ?? '');
-                    formData.append('chunkIndex', `${i}`);
-                    formData.append('totalChunks', `${totalChunks}`);
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', '/api/upload', true);
-                    xhr.upload.onprogress = (e) => {
-                        if (e.lengthComputable) {
-                            uploadProgress.value = Math.round((e.loaded / e.total) * 100);
-                            if (uploadProgress.value === 100) {
-                                showUpload.value = false;
-                                spinner.value = true;
-                            }
-                        }
-                    }
-                    xhr.onreadystatechange = () => {
-                        if (xhr.readyState === 4 && xhr.status === 200) {
-                            spinner.value = false;
-                            successUpload.value = true;
-                            setTimeout(() => {
-                                successUpload.value = false;
-                                uploading.value = false;
-                                uploadProgress.value = 0;
-                                showUpload.value = true;
-                                dynamicClasses.value = ""
-                            }, 2*1000);
-                        }
-                    }
-                    xhr.send(formData);
-                    break; // Break the retry loop if the upload was successful
-                } catch (error) {
-                    retries--;
-                    if (retries === 0) {
-                        alert('Failed to upload file after 3 attempts');
-                        return;
-                    }
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/upload', true);
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+                uploadProgress.value = Math.round((e.loaded / e.total) * 100);
+                //if progress is 100 but response is not yet received, hide the progress bar show a loading spinner
+                if (uploadProgress.value === 100) {
+                    showUpload.value = false;
+                    spinner.value = true;
                 }
             }
         }
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                spinner.value = false;
+                successUpload.value = true;
+                setTimeout(() => {
+                    successUpload.value = false;
+                    uploading.value = false;
+                    uploadProgress.value = 0;
+                    showUpload.value = true;
+                    dynamicClasses.value = ""
+                }, 2*1000);
+            }
+        }
+        xhr.send(formData);
     }
+
 }
 
 function drop(dragEvent: DragEvent) {
