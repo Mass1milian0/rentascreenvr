@@ -1,0 +1,40 @@
+{
+  "name": "nuxt-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.10",
+    "@types/stripe": "^8.0.417",
+    "autoprefixer": "^10.4.16",
+    "nuxt": "^3.10.2",
+    "nuxt-icon": "^0.6.8",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "vue": "^3.4.19",
+    "vue-router": "^4.2.5"
+  },
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@mdi/font": "^7.4.47",
+    "@nuxtjs/supabase": "^1.1.6",
+    "@nuxtjs/tailwindcss": "^6.11.4",
+    "@stripe/stripe-js": "^3.0.10",
+    "@types/fluent-ffmpeg": "^2.1.24",
+    "@vee-validate/nuxt": "^4.12.5",
+    "@vee-validate/yup": "^4.12.6",
+    "fluent-ffmpeg": "^2.1.2",
+    "h3-formidable": "^1.0.0",
+    "nuxt-auth-utils": "^0.0.16",
+    "nuxt-headlessui": "^1.1.5",
+    "nuxt-socket-io": "^3.0.10",
+    "stripe": "^14.21.0",
+    "yup": "^1.4.0"
+  }
+}

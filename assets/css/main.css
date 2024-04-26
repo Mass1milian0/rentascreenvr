@@ -1,0 +1,51 @@
+:root{
+    background-color: rgb(15, 17, 17);
+}
+body{
+    color: #e8e6e3;
+}
+a{
+    color: #131516;
+}
+.text-slate-600 {
+    color: rgb(176, 170, 159);
+}
+.text-slate-800 {
+    color: rgb(204, 199, 193);
+}
+.text-slate-500 {
+    color: rgb(157, 148, 135);
+}
+.text-white {
+    color: rgb(232, 230, 227);
+}
+.text-gray-800 {
+    color: rgb(205, 200, 194);
+}
+.text-gray-600 {
+    color: rgb(177, 170, 160);
+}
+.hover\:text-gray-900:hover {
+    color: rgb(219, 214, 208 / var(--tw-text-opacity)) !important;
+}
+
+.pointer {
+    cursor: pointer;
+    /**make it go to the right slightly on hover**/
+    background:
+        linear-gradient(currentColor 0 0) bottom /var(--d, 0) 1px no-repeat;
+    transition: 0.5s;
+    padding: 0.3rem;
+}
+
+.pointer:hover {
+    --d: 50%;
+}
+.bg-white-important {
+    background-color: rgb(255, 255, 255) !important;
+}
+.tabSelected {
+	/*make it unselectable*/
+	user-select: none;
+	--d: 100% !important;
+}
