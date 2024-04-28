@@ -64,6 +64,7 @@ export default defineEventHandler(async (event) => {
         try {
             await fs.writeFile(`./screens/${screen_id}/video`, Buffer.concat(chunks))
         } catch (error) {
+            console.log(error)
         }
         //delete all chunks
         for (let i = 0; i < totalChunks; i++) {
@@ -176,6 +177,7 @@ export default defineEventHandler(async (event) => {
                 return { status: 200 } //file hasn't been merged yet
             }
         } catch (error) {
+            console.log(error)
         }
 
     }
