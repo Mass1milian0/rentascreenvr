@@ -3,7 +3,7 @@ import type { Database } from '~/server/supabase'
 import { readFiles } from 'h3-formidable'
 import * as fs from 'fs/promises';
 import ffmpeg from 'fluent-ffmpeg';
-ffmpeg.setFfmpegPath('C:/Program Files/FFmpeg/bin/ffmpeg.exe');
+ffmpeg.setFfmpegPath('/usr/bin/ffmpeg');
 
 export default defineEventHandler(async (event) => {
     const client = await serverSupabaseClient<Database>(event)
