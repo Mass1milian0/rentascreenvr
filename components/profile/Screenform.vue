@@ -13,7 +13,8 @@
                 </div>
             </div>
             <div v-else class="flex justify-center content-center flex-wrap flex-col text-center items-center">
-                <Loading class="flex justify-center content-center flex-wrap flex-row gap-4 text-center items-center" :uploading="uploading" :uploadProgress="uploadProgress" />
+                <Loading class="flex justify-center content-center flex-wrap flex-row gap-4 text-center items-center"
+                    :uploading="uploading" :uploadProgress="uploadProgress" />
             </div>
             <div v-if="successUpload"
                 class="flex justify-center content-center flex-wrap flex-col text-center items-center">
@@ -72,39 +73,103 @@ async function handleFile(event: Event) {
             return;
         }
         const file = input.files[0];
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('screenId', props?.screenId ?? '');
         showUpload.value = false;
         uploading.value = true;
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/api/upload', true);
-        xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) {
-                uploadProgress.value = Math.round((e.loaded / e.total) * 100);
-                //if progress is 100 but response is not yet received, hide the progress bar show a loading spinner
-                if (uploadProgress.value === 100) {
-                    showUpload.value = false;
+        try {
+            let res = await $fetch('/api/requestCleanFolderScreen', {
+                method: 'POST',
+                body: JSON.stringify({ screen_id: props?.screenId ?? '' })
+            })
+        } catch (e) {
+            alert("Failed to clean the folder on the server, please try again later")
+        }
+
+        //chunk the files limit to 10MB chunks, create an index for each chunk, send to the server the index the total number of chunks and the chunk itself
+        //to the chunk assign a unique id, the server will store the chunks in a temporary folder, once all chunks are received, the server will merge the chunks
+
+        const chunkSize = 10 * 1024 * 1024;
+        const totalChunks = Math.ceil(file.size / chunkSize);
+        const chunkIds = Array.from({ length: totalChunks }, (_, i) => i);
+
+        async function uploadChunk(chunk: Blob, index: number, retries: number = 0) {
+            const formData = new FormData();
+            formData.append('file', chunk);
+            formData.append('screenId', props?.screenId ?? '');
+            formData.append('index', index.toString());
+            formData.append('totalChunks', totalChunks.toString());
+            formData.append('originalFileName', file.name);
+            try {
+                //setup a timeout for the fetch
+                const response = await $fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                    timeout: 40 * 1000
+                });
+                if (response.status === 201) { //total Success
+                    uploadProgress.value = Math.round((index / totalChunks) * 100);
                     spinner.value = true;
+                    successUpload.value = true;
+                    uploading.value = false;
+                    setTimeout(() => {
+                        successUpload.value = false;
+                        uploading.value = false;
+                        uploadProgress.value = 0;
+                        showUpload.value = true;
+                        dynamicClasses.value = ""
+                        spinner.value = false;
+                    }, 2 * 1000);
+                }
+                else if (response.status == 200) {
+                    //do nothing, file is being uploaded
+                }
+                else {
+                    //retry the chunk
+                    if (retries < 3) {
+                        await uploadChunk(chunk, index, retries + 1);
+                    } else {
+                        throw new Error("Failed to upload the chunk") //automatically it will be caught by the catch block and retry the group
+                    }
+                }
+            }
+            catch (e) {
+                if (retries < 3) {
+                    await uploadChunk(chunk, index, retries + 1);
+                } else {
+                    throw new Error("Failed to upload the chunk") //automatically it will be caught by the catch block and retry the group
                 }
             }
         }
-        xhr.onreadystatechange = () => {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                spinner.value = false;
-                successUpload.value = true;
-                setTimeout(() => {
-                    successUpload.value = false;
-                    uploading.value = false;
-                    uploadProgress.value = 0;
-                    showUpload.value = true;
-                    dynamicClasses.value = ""
-                }, 2*1000);
+        //send concurrently chunks in groups of 5 wait for the group to finish before sending the next group
+        const chunkGroups = chunkIds.reduce((acc, curr, index) => {
+            if (index % 5 === 0) {
+                acc.push([curr]);
+            } else {
+                acc[acc.length - 1].push(curr);
             }
-        }
-        xhr.send(formData);
-    }
+            return acc;
+        }, [] as number[][]);
+        for (const chunkGroup of chunkGroups) {
+            let promises = await Promise.allSettled(chunkGroup.map(async index => {
+                const start = index * chunkSize;
+                const end = Math.min(file.size, (index + 1) * chunkSize);
+                const chunk = file.slice(start, end);
+                await uploadChunk(chunk, index);
+            }));
 
+            //check if all the chunks were uploaded if not retry the group
+            if (promises.some(promise => promise.status === 'rejected')) {
+                //retry the group
+                await Promise.allSettled(chunkGroup.map(async index => {
+                    const start = index * chunkSize;
+                    const end = Math.min(file.size, (index + 1) * chunkSize);
+                    const chunk = file.slice(start, end);
+                    await uploadChunk(chunk, index);
+                }));
+            }
+            //update the progress
+            uploadProgress.value = Math.round((chunkGroup[chunkGroup.length - 1] / totalChunks) * 100);
+        }
+    }
 }
 
 function drop(dragEvent: DragEvent) {
