@@ -1,9 +1,15 @@
 import { serverSupabaseClient } from '#supabase/server'
 import type { Database } from '~/server/supabase'
-import { readFiles } from 'h3-formidable'
+import formidable from "formidable";
 import * as fs from 'fs/promises';
 import ffmpeg from 'fluent-ffmpeg';
 ffmpeg.setFfmpegPath('/usr/bin/ffmpeg');
+
+export const config = {
+    api: {
+      bodyParser: false,
+    },
+  };
 
 export default defineEventHandler(async (event) => {
     const client = await serverSupabaseClient<Database>(event)
@@ -11,11 +17,18 @@ export default defineEventHandler(async (event) => {
 
     //get post data
     //@ts-ignore
-    const { files, fields } = await readFiles(event, { maxFileSize: 5 * 1024 * 1024 * 1024 })
+    const form = formidable({});
+    let files, fields
+    try {
+        [ fields, files ] = await form.parse(event.node.req);
+    } catch (error) {
+        console.log(error)
+        return { msg: 'failed to read files', status: 400 }
+    }
     const screen_id = fields.screenId
-    const index = parseInt(fields.index, 10)
-    const totalChunks = parseInt(fields.totalChunks, 10)
-    const originalFilename = fields.originalFileName[0]
+    const index = parseInt(fields.index?.[0] ?? '0', 10)
+    const totalChunks = parseInt(fields.totalChunks?.[0] ?? '0', 10)
+    const originalFilename = fields.originalFileName?.[0] ?? ''
 
     //if the folder screen_id or screens doesn't exist create it
     try {
@@ -30,7 +43,7 @@ export default defineEventHandler(async (event) => {
         await fs.mkdir(`./screens/${screen_id}`)
     }
     //check if there are files
-    if (!files) {
+    if (!files || !files.file) {
         return { msg: 'no files found', status: 400 }
     }
 

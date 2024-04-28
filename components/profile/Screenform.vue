@@ -87,7 +87,7 @@ async function handleFile(event: Event) {
         //chunk the files limit to 10MB chunks, create an index for each chunk, send to the server the index the total number of chunks and the chunk itself
         //to the chunk assign a unique id, the server will store the chunks in a temporary folder, once all chunks are received, the server will merge the chunks
 
-        const chunkSize = 10 * 1024 * 1024;
+        const chunkSize = 2 * 1024 * 1024;
         const totalChunks = Math.ceil(file.size / chunkSize);
         const chunkIds = Array.from({ length: totalChunks }, (_, i) => i);
 

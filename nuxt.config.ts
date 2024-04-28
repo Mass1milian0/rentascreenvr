@@ -14,7 +14,7 @@ export default defineNuxtConfig({
         {
           hid : "description",
           name : "description",
-          content : "Rent A Screen VR is a platform that allows you to rent a screen in virtual reality and watch your favorite movies, series, or play games with your friends in a virtual room."
+          content : "Rent A Screen VR is a platform that allows you to rent a screen in virtual reality and watch your favorite movies, series, or virtually anything."
         },
         {
           hid: 'og:title',
@@ -24,7 +24,7 @@ export default defineNuxtConfig({
         {
           hid: 'og:description',
           property: 'og:description',
-          content: 'Rent virtual reality screens for your events and meetings.'
+          content: 'Rent your own screens.'
         },
         {
           hid: 'og:image',
@@ -37,9 +37,6 @@ export default defineNuxtConfig({
   },
   devtools: { enabled: true },
   css: ["~/assets/css/main.css"],
-  build: {
-    transpile: ['vuetify'],
-  },
   postcss: {
     plugins: {
       tailwindcss: {},

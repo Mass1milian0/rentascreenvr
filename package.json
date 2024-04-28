@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.10",
+    "@types/formidable": "^3.4.5",
     "@types/stripe": "^8.0.417",
     "autoprefixer": "^10.4.16",
     "nuxt": "^3.10.2",
@@ -30,7 +31,7 @@
     "@vee-validate/nuxt": "^4.12.5",
     "@vee-validate/yup": "^4.12.6",
     "fluent-ffmpeg": "^2.1.2",
-    "h3-formidable": "^1.0.0",
+    "formidable": "^3.5.1",
     "nuxt-auth-utils": "^0.0.16",
     "nuxt-headlessui": "^1.1.5",
     "nuxt-socket-io": "^3.0.10",
