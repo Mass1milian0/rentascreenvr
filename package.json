@@ -35,6 +35,7 @@
     "nuxt-auth-utils": "^0.0.16",
     "nuxt-headlessui": "^1.1.5",
     "nuxt-socket-io": "^3.0.10",
+    "resend": "^3.2.0",
     "stripe": "^14.21.0",
     "yup": "^1.4.0"
   }

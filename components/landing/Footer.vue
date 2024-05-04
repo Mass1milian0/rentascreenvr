@@ -8,6 +8,9 @@
       <div>
         <p class="font-small text-m text-gray-800">Mail and Info</p>
         <p class="text-left text-xs text leading-relaxed text-slate-500 mt-3">massimilianobiondi07@gmail.com</p>
+        <NuxtLink target="_blank" to="https://discord.gg/dgM3VXbBVE" class="cursor-pointer text-blue-500">
+          <p class="text-left text-xs text leading-relaxed text-slate-300 underline mt-3">RentAScreenVR Official Discord</p>
+        </NuxtLink>
       </div>
       <div>
         <p class="font-small text-m text-gray-800">TOS</p>

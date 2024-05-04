@@ -20,6 +20,12 @@
                 class="flex justify-center content-center flex-wrap flex-col text-center items-center">
                 <h2 class="text-green-600 font-bold text-center">upload successful</h2>
             </div>
+            <div v-if="mp4Warning"
+                class="flex justify-center content-center flex-wrap flex-col text-center items-center">
+                <h2 class="text-orange-500 font-bold text-center">Your file isn't an mp4<br />This is fine, but the
+                    server has to process your video to make it an mp4 <br /> you will be sent an email when the process
+                    ends</h2>
+            </div>
             <div v-if="spinner" class="flex justify-center content-center flex-wrap flex-col text-center items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" width="200"
                     height="200" style="shape-rendering: auto; display: block; background: transparent;"
@@ -36,7 +42,7 @@
                     </g>
                 </svg>
                 <h2>Processing your video, this might take a while</h2>
-                <h2>Please do not reload the page and or close it</h2>
+                <h2>you can safely close the page, we will notify you when the processing is finished</h2>
             </div>
         </div>
     </div>
@@ -52,12 +58,21 @@ let uploading = ref(false) //false
 let uploadProgress = ref(0)
 let successUpload = ref(false) //false
 let spinner = ref(false) //false
+let mp4Warning = ref(false) //false
 const props = defineProps({
     screenId: String
 })
 
 function triggerFileInput() {
     fileInput.value?.click();
+}
+
+let isBeingProcessed = await $fetch('/api/checkVideo', {
+    method: 'POST',
+    body: JSON.stringify({ screen_id: props?.screenId ?? '' })
+})
+if (isBeingProcessed.status == 104) {
+    spinner.value = true;
 }
 
 async function handleFile(event: Event) {
@@ -71,6 +86,10 @@ async function handleFile(event: Event) {
         if (!input.files[0].type.includes("video")) {
             alert("Only video files are allowed")
             return;
+        }
+        //if video is not mp4 show a warning
+        if (!input.files[0].type.includes("mp4")) {
+            mp4Warning.value = true;
         }
         const file = input.files[0];
         showUpload.value = false;
@@ -99,27 +118,12 @@ async function handleFile(event: Event) {
             formData.append('totalChunks', totalChunks.toString());
             formData.append('originalFileName', file.name);
             try {
-                //setup a timeout for the fetch
-                const response = await $fetch('/api/upload', {
+                let response = await $fetch('/api/upload', {
                     method: 'POST',
                     body: formData,
                     timeout: 40 * 1000
                 });
-                if (response.status === 201) { //total Success
-                    uploadProgress.value = Math.round((index / totalChunks) * 100);
-                    spinner.value = true;
-                    successUpload.value = true;
-                    uploading.value = false;
-                    setTimeout(() => {
-                        successUpload.value = false;
-                        uploading.value = false;
-                        uploadProgress.value = 0;
-                        showUpload.value = true;
-                        dynamicClasses.value = ""
-                        spinner.value = false;
-                    }, 2 * 1000);
-                }
-                else if (response.status == 200) {
+                if (response.status == 200) {
                     //do nothing, file is being uploaded
                 }
                 else {
@@ -149,17 +153,19 @@ async function handleFile(event: Event) {
             return acc;
         }, [] as number[][]);
         for (const chunkGroup of chunkGroups) {
-            let promises = await Promise.allSettled(chunkGroup.map(async index => {
-                const start = index * chunkSize;
-                const end = Math.min(file.size, (index + 1) * chunkSize);
-                const chunk = file.slice(start, end);
-                await uploadChunk(chunk, index);
-            }));
-
-            //check if all the chunks were uploaded if not retry the group
-            if (promises.some(promise => promise.status === 'rejected')) {
-                //retry the group
-                await Promise.allSettled(chunkGroup.map(async index => {
+            let promises
+            //if last group, instead of sending concurrently send sequentially one by one
+            if (chunkGroup[chunkGroup.length - 1] === totalChunks - 1) {
+                for (const index of chunkGroup) {
+                    const start = index * chunkSize;
+                    const end = Math.min(file.size, (index + 1) * chunkSize);
+                    const chunk = file.slice(start, end);
+                    await uploadChunk(chunk, index);
+                }
+                uploadProgress.value = Math.round((chunkGroup[chunkGroup.length - 1] / totalChunks) * 100);
+                break;
+            } else {
+                promises = await Promise.allSettled(chunkGroup.map(async index => {
                     const start = index * chunkSize;
                     const end = Math.min(file.size, (index + 1) * chunkSize);
                     const chunk = file.slice(start, end);
@@ -169,6 +175,53 @@ async function handleFile(event: Event) {
             //update the progress
             uploadProgress.value = Math.round((chunkGroup[chunkGroup.length - 1] / totalChunks) * 100);
         }
+        //set the spinner and set upload to 100% and wait for the server to finish processing the video
+        spinner.value = true;
+        uploadProgress.value = 100;
+        let response = await $fetch('/api/checkVideo', {
+            method: 'POST',
+            body: JSON.stringify({ screen_id: props?.screenId ?? '' })
+        });
+        let status = response.status;
+        if (status === 200) {
+            spinner.value = false;
+            successUpload.value = true;
+            uploading.value = false;
+            mp4Warning.value = false;
+            setTimeout(() => {
+                successUpload.value = false;
+                uploading.value = false;
+                uploadProgress.value = 0;
+                showUpload.value = true;
+                dynamicClasses.value = ""
+                spinner.value = false;
+                clearInterval(interval);
+            }, 2 * 1000);
+        }
+        let interval = setInterval(async () => {
+            let response = await $fetch('/api/checkVideo', {
+                method: 'POST',
+                body: JSON.stringify({ screen_id: props?.screenId ?? '' })
+            });
+            let status = response.status;
+            if (status === 200) {
+                spinner.value = false;
+                successUpload.value = true;
+                mp4Warning.value = false;
+                uploading.value = false;
+                setTimeout(() => {
+                    successUpload.value = false;
+                    uploading.value = false;
+                    uploadProgress.value = 0;
+                    showUpload.value = true;
+                    dynamicClasses.value = ""
+                    spinner.value = false;
+                    mp4Warning.value = false;
+                    clearInterval(interval);
+                }, 2 * 1000);
+            }
+        }, 5 * 1000);
+
     }
 }
 

@@ -70,7 +70,7 @@ let { loggedIn, user, session, clear } = useUserSession();
           <LandingLink href="/signup" size="md" block>Sign up</LandingLink>
         </div>
         <div v-else class="lg:hidden flex items-center mt-3 gap-4">
-          <LandingLink href="#" styleName="muted" block size="md">{{ user.username }}</LandingLink>
+          <LandingLink href="/profile" styleName="muted" block size="md">{{ user.username }}</LandingLink>
           <LandingLink href="#" @click="clear" size="md" block>Log out</LandingLink>
         </div>
       </nav>

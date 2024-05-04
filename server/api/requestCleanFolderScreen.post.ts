@@ -1,41 +1,29 @@
-import { serverSupabaseClient } from '#supabase/server'
-import type { Database } from '~/server/supabase'
 import * as fs from 'fs/promises';
+import userCheck from '../middlewere/userCheck';
+import screenCheck from '../middlewere/screenCheck';
 
 export default defineEventHandler(async (event) => {
-  const client = await serverSupabaseClient<Database>(event)
-  const session = await getUserSession(event)
-
   //get post data
   const body = await readBody(event)
   const screen_id = body.screen_id
 
   //check if screen exists, belongs to the user and is active
-
-  if (!screen_id) {
-    return { msg: 'screen_id is required', status: 400 }
-  }
-
-  if (!session.user) {
-    return { msg: 'user not found', status: 400 }
-  }
-  const userid = (session.user as { id?: string })?.id || '000'
-
-
-  const { data: screens, error: screenError } = await client
-    .from('user_screens')
-    .select('id')
-    .eq('screen_id', screen_id)
-    .eq('user', userid)
-    .eq('status', 'Online')
-    .single()
-
-  if (!screens) {
-    return { msg: 'screen not found', status: 400 }
-  }
-
+  await userCheck(event);
+  await screenCheck(event);
   //clean the screen folder
     try {
+      //check if the folder exists before hand, if it doesn't return
+      try{
+        await fs.access(`./screens/`)
+      } catch (error) {
+        return { status: 200 }
+      }
+      try {
+          await fs.access(`./screens/${screen_id}`)
+      } catch (error) {
+        //if the folder doesn't exist, return 200, cuz it's already clean
+        return { status: 200 }
+      }
         await fs.rm(`./screens/${screen_id}/`, { recursive: true })
     } catch (error : any) {
         return { msg: error.message, status: 500 }

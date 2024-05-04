@@ -73,7 +73,7 @@ async function turnOnScreen() {
 }
 async function getLink() {
     //get current hostname
-    let url = requestUrl.host + '/api/streamvideo/' + props.screenId
+    let url = 'https://' + requestUrl.host + '/api/streamvideo/' + props.screenId
     //copy to clipboard
     navigator.clipboard.writeText(url)
     btnText.value = "Copied!"

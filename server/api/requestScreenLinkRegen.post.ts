@@ -1,47 +1,31 @@
 import { serverSupabaseClient } from '#supabase/server'
 import type { Database } from '~/server/supabase'
-import { mkdir, rename } from 'fs/promises';
-
+import { rename } from 'fs/promises';
+import screenCheck from "../middlewere/screenCheck"
+import userCheck from "../middlewere/userCheck"
 export default defineEventHandler(async (event) => {
     const client = await serverSupabaseClient<Database>(event)
-    const session = await getUserSession(event)
     
     //get post data
     const body = await readBody(event)
     const screen_id = body.screen_id
     
     //check if screen exists, belongs to the user and is active
-    
-    if (!screen_id) {
-        return { msg: 'screen_id is required', status: 400 }
-    }
-    
-    if (!session.user) {
-        return { msg: 'user not found', status: 400 }
-    }
-    const userid = (session.user as { id?: string })?.id || '000'
+    await userCheck(event);
+    await screenCheck(event);
+    let screenInterface = event.context.screenInterface
+    let screen : typeof screenInterface = event.context.screen
+    let user = event.context.user
 
-    const { data: screens, error: screenError } = await client
-        .from('user_screens')
-        .select('*')
-        .eq('screen_id', screen_id)
-        .eq('user', userid)
-        .neq('status', 'Expired')
-        .single()
-
-    //delete the screen and regenerate it by reinserting it
-    if (!screens) {
-        return { msg: 'screen not found', status: 400 }
-    }
-    const { data: deleteData, error: deleteError } = await client.from('user_screens').delete().eq('id', screens.id).single()
+    const { data: deleteData, error: deleteError } = await client.from('user_screens').delete().eq('id', screen_id).single()
     if (deleteError) {
         return { msg: deleteError.message, status: 500 }
     }
     const { data, error } = await client.from('user_screens').insert([
         {
-            expires_in: screens.expires_in,
-            user: userid,
-            name: screens.name
+            expires_in: screen.expires_in,
+            user: user.id,
+            name: screen.name
         }
     ]).select().single()
 
