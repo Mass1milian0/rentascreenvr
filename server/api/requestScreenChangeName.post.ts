@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   await screenCheck(event);
 
   //update the screen status
-  const { data, error } = await client.from('user_screens').update({ name: newName }).eq('id', screen_id).select().single()
+  const { data, error } = await client.from('user_screens').update({ name: newName }).eq('screen_id', screen_id).select().single()
 
   if (error) {
     return { msg: error.message, status: 500 }

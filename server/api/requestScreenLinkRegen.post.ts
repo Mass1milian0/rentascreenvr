@@ -1,6 +1,6 @@
 import { serverSupabaseClient } from '#supabase/server'
 import type { Database } from '~/server/supabase'
-import { rename } from 'fs/promises';
+import { rename, mkdir } from 'fs/promises';
 import screenCheck from "../middlewere/screenCheck"
 import userCheck from "../middlewere/userCheck"
 export default defineEventHandler(async (event) => {
@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
     let screen : typeof screenInterface = event.context.screen
     let user = event.context.user
 
-    const { data: deleteData, error: deleteError } = await client.from('user_screens').delete().eq('id', screen_id).single()
+    const { data: deleteData, error: deleteError } = await client.from('user_screens').delete().eq('screen_id', screen_id).single()
     if (deleteError) {
         return { msg: deleteError.message, status: 500 }
     }
@@ -32,7 +32,15 @@ export default defineEventHandler(async (event) => {
 
     //rename the screen folder
     if(!data) return { msg: 'error creating screen', status: 500 }
-    await rename(`${process.cwd()}/screens/${screen_id}`, `${process.cwd()}/screens/${data.screen_id}`)
+    try {
+        await rename(`${process.cwd()}/screens/${screen_id}`, `${process.cwd()}/screens/${data.screen_id}`)
+    } catch (error : any) {
+        //see if the screen folder exists
+        if (error.code === 'ENOENT') {
+            //create the screen folder
+            await mkdir(`${process.cwd()}/screens/${data.screen_id}`)
+        }        
+    }
     if (error) {
         return { msg: error, status: 500 }
     }
