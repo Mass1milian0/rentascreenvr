@@ -6,6 +6,8 @@ import { serverSupabaseClient } from '#supabase/server';
 import type { Database } from '~/server/supabase';
 import child from 'child_process';
 import { Resend } from "resend";
+import type { H3Event } from 'h3';
+import { getCookie } from 'h3';
 
 ffmpeg.setFfmpegPath('/usr/bin/ffmpeg');
 
@@ -98,34 +100,34 @@ async function deleteChunks(screen_id: string | string[] | undefined) {
     });
 }
 async function mergeChunks(screen_id: string | string[] | undefined, totalChunks: number, originalFilename: string) {
-    await new Promise<void>((resolve, reject) => {
-        setTimeout(() => {
-            resolve();
-        }, 1000);
-    });
-    const chunks = [];
-    try {
-        for (let i = 0; i < totalChunks; i++) {
-            chunks.push(await fs.readFile(`./screens/${screen_id}/chunk${i}`));
+    if (await createCheckLockfile(screen_id)) {
+        //this should never happen, but we will create a lock file to tell the client that the server is processing the video
+        const chunks = [];
+        try {
+            for (let i = 0; i < totalChunks; i++) {
+                chunks.push(await fs.readFile(`./screens/${screen_id}/chunk${i}`));
+            }
+        } catch (error) {
+            throw error;
         }
-    } catch (error) {
-        throw error;
-    }
 
-    try {
-        await fs.writeFile(`./screens/${screen_id}/video`, Buffer.concat(chunks));
-    } catch (error) {
-        console.log(error);
+        try {
+            await fs.writeFile(`./screens/${screen_id}/video`, Buffer.concat(chunks));
+        } catch (error) {
+            console.log(error);
+        }
+        try {
+            fs.rename(`./screens/${screen_id}/video`, `./screens/${screen_id}/video.${originalFilename.split('.').pop()}`);
+        } catch (error) {
+        }
+        let fileFinished = {
+            originalFilename,
+            filepath: `./screens/${screen_id}/video.${originalFilename.split('.').pop()}`
+        };
+        //delete the lock file
+        await fs.unlink(`./screens/${screen_id}/lock`);
+        return fileFinished;
     }
-    try {
-        fs.rename(`./screens/${screen_id}/video`, `./screens/${screen_id}/video.${originalFilename.split('.').pop()}`);
-    } catch (error) {
-    }
-    let fileFinished = {
-        originalFilename,
-        filepath: `./screens/${screen_id}/video.${originalFilename.split('.').pop()}`
-    };
-    return fileFinished;
 }
 
 async function processVideoAndMerge(prependVideoPath: string, fileFinished: { filepath: string, originalFilename: string }, outputFilepath: string, screen_id: string | string[] | undefined, originalFilename: string) {
@@ -204,6 +206,10 @@ async function mergeVideos(prependVideoPath: string, mainVideoPath: string, outp
 }
 
 export default defineEventHandler(async (event) => {
+    async function getUserSession(event: H3Event) {
+        const session = getCookie(event, 'session');
+        return session ? JSON.parse(session) : null;
+    }
     const client = await serverSupabaseClient<Database>(event);
     const session = await getUserSession(event);
     const runtimeConfig = useRuntimeConfig(event);
@@ -281,6 +287,10 @@ export default defineEventHandler(async (event) => {
             .single();
 
 
+        //at this point, we are safe to merge the chunks, however, we need to stop the retry mechanism on the front
+        //which will wait for the response from the server, 40 seconds after the last chunk is uploaded after the last chunk is uploaded again
+        //so we send a 200 response to the client while we merge the chunks
+        event.node.res.end();
         let fileFinished;
         try {
             fileFinished = await mergeChunks(screen_id, totalChunks, originalFilename);
@@ -302,8 +312,7 @@ export default defineEventHandler(async (event) => {
         }
         // Prepare prepend video
         let prependVideoPath = './screenerrors/prepend.mp4';
-        event.node.res.end();
-        if(!fileFinished) return { status: 500 };
+        if (!fileFinished) return { status: 500 };
         let isntMp4 = fileFinished.originalFilename.split('.').pop() !== 'mp4';
         await preparePrependVideo(fileFinished.filepath, prependVideoPath, isntMp4, screen_id);
         prependVideoPath = `./screens/${screen_id}/prepend_prepared.mp4`;
@@ -316,7 +325,7 @@ export default defineEventHandler(async (event) => {
         });
         if (isntMp4) {
             await processVideoAndMerge(prependVideoPath, fileFinished, outputFilepath, screen_id, originalFilename);
-            let email_template : string = await useStorage('assets:server').getItem('email_template.html') ?? 'your video is ready! <a href="{{screenLink}}">Click here to view</a>';
+            let email_template: string = await useStorage('assets:server').getItem('email_template.html') ?? 'your video is ready! <a href="{{screenLink}}">Click here to view</a>';
             //in the email template, replace the placeholders that are defined by {{}} with the actual values
             //replace all screenLink with the actual screen link
             email_template = email_template.replace(/{{screenLink}}/g, `https://rentascreenvr.com/screens/${screen_id}`);

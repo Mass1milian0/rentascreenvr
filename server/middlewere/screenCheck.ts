@@ -1,6 +1,12 @@
 import { serverSupabaseClient } from '#supabase/server'
 import type { Database } from '~/server/supabase'
+import type { H3Event } from 'h3';
+import { getCookie } from 'h3';
 
+async function getUserSession(event: H3Event) {
+    const session = getCookie(event, 'session');
+    return session ? JSON.parse(session) : null;
+}
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
     const screen_id = body.screen_id

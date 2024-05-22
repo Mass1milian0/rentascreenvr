@@ -61,7 +61,7 @@ export default defineNuxtConfig({
   supabase:{
     redirect : false
   },
-  modules: ["nuxt-icon", "@nuxtjs/supabase", "nuxt-auth-utils", "@nuxtjs/tailwindcss", "nuxt-headlessui", "@vee-validate/nuxt"],
+  modules: ["nuxt-icon", "@nuxtjs/supabase", "@nuxtjs/tailwindcss", "nuxt-headlessui", "@vee-validate/nuxt", '@pinia/nuxt'],
   veeValidate: {
     // disable or enable auto imports
     autoImports: true,
@@ -73,5 +73,4 @@ export default defineNuxtConfig({
       ErrorMessage: 'VeeErrorMessage',
     },
   }
-
 });

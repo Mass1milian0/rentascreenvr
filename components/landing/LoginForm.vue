@@ -62,8 +62,17 @@ const submitForm = async () => {
                 method: 'POST',
                 body: JSON.stringify(formData.value)
             })
-            await useUserSession().fetch();
-            navigateTo('/')
+            if(data.status === 200){
+                const sessionData = data as { session_id: string };
+                if (sessionData.session_id) {
+                    localStorage.setItem('rent_a_screen_session_id', sessionData.session_id);
+                }
+                navigateTo('/')
+            }else{
+                alert('Invalid credentials, either username or password is incorrect.')
+                formData.value.username = ''
+                formData.value.password = ''
+            }
         } catch (error) {
 
         }

@@ -1,5 +1,5 @@
-import { serverSupabaseClient } from '#supabase/server';
-import type { Database } from '~/server/supabase';
+import { serverSupabaseClient } from '#supabase/server'
+import type { Database } from '~/server/supabase'
 export default defineEventHandler(async (event) => {
     const data = await readBody(event);
     const client = await serverSupabaseClient<Database>(event);
@@ -18,5 +18,5 @@ export default defineEventHandler(async (event) => {
         return { user: {} , msg: 'session not found or expired', status: 400 }
     }
 
-   event.context.user = user.data
+    return { user: user.data, msg:'session found', status: 200 }
 });
