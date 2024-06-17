@@ -28,8 +28,11 @@ watchEffect(() => {
   location.value = route.path;
 });
 
-let { loggedIn, user, session, clear } = useUserSession();
+let { loggedIn, user, session, clear, fetch } = useUserSession();
 
+onMounted(() => {
+  fetch();
+});
 
 </script>
 

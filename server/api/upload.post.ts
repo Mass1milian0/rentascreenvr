@@ -130,49 +130,54 @@ async function mergeChunks(screen_id: string | string[] | undefined, totalChunks
 
 async function processVideoAndMerge(prependVideoPath: string, fileFinished: { filepath: string, originalFilename: string }, outputFilepath: string, screen_id: string | string[] | undefined, originalFilename: string) {
     if (await createCheckLockfile(screen_id) === false) return { status: 200 };
-    await new Promise<void>((resolve, reject) => {
-        ffmpeg()
-            .input(prependVideoPath)
-            .input(fileFinished.filepath)
-            .complexFilter([
-                {
-                    filter: 'concat', options: { n: 2, v: 1, a: 1 }, inputs: ['0:v', '0:a', '1:v', '1:a'], outputs: ['video', 'audio']
-                }
-            ], ['video', 'audio'])
-            .outputOptions([
-                '-c:v libx264',
-                '-preset faster',
-                '-crf 23',
-                '-c:a aac',
-                '-movflags faststart',
-                '-pix_fmt yuv420p',
-                '-profile:v main',
-                '-level 3.1',
-            ])
-            .on('end', () => {
-                resolve();
-            })
-            .on('error', (err, stdout, stderr) => {
-                console.error('Error:', err.message);
-                console.error('ffmpeg stdout:', stdout);
-                console.error('ffmpeg stderr:', stderr);
-                reject(err);
-            })
-            .on('stderr', (stderrLine) => {
-                console.log('Stderr output:', stderrLine);
-            })
-            .on('progress', (progress) => {
-                console.log('Processing: ' + progress.percent + '% done');
-            })
-            .on('start', (commandLine) => {
-                console.log('Spawned Ffmpeg with command: ' + commandLine);
-            })
-            .on('stdout', (stdoutLine) => {
-                console.log('Stdout output:', stdoutLine);
-            })
-            .save(outputFilepath);
-    });
-
+    try{
+        await new Promise<void>((resolve, reject) => {
+            ffmpeg()
+                .input(prependVideoPath)
+                .input(fileFinished.filepath)
+                .complexFilter([
+                    {
+                        filter: 'concat', options: { n: 2, v: 1, a: 1 }, inputs: ['0:v', '0:a', '1:v', '1:a'], outputs: ['video', 'audio']
+                    }
+                ], ['video', 'audio'])
+                .outputOptions([
+                    '-c:v libx264',
+                    '-preset faster',
+                    '-crf 23',
+                    '-c:a aac',
+                    '-movflags faststart',
+                    '-pix_fmt yuv420p',
+                    '-profile:v main',
+                    '-level 3.1',
+                ])
+                .on('end', () => {
+                    resolve();
+                })
+                .on('error', (err, stdout, stderr) => {
+                    console.error('Error:', err.message);
+                    console.error('ffmpeg stdout:', stdout);
+                    console.error('ffmpeg stderr:', stderr);
+                    reject(err);
+                })
+                .on('stderr', (stderrLine) => {
+                    console.log('Stderr output:', stderrLine);
+                })
+                .on('progress', (progress) => {
+                    console.log('Processing: ' + progress.percent + '% done');
+                })
+                .on('start', (commandLine) => {
+                    console.log('Spawned Ffmpeg with command: ' + commandLine);
+                })
+                .on('stdout', (stdoutLine) => {
+                    console.log('Stdout output:', stdoutLine);
+                })
+                .save(outputFilepath);
+        });
+    } catch (error : any) {
+        //create a error file with the error message
+        await fs.writeFile(`./screens/${screen_id}/error`, JSON.stringify(error));
+        return
+    }
     await Promise.all([
         fs.unlink(`./screens/${screen_id}/video.${originalFilename.split('.').pop()}`),
         fs.unlink(`./screens/${screen_id}/lock`)
@@ -205,7 +210,6 @@ async function mergeVideos(prependVideoPath: string, mainVideoPath: string, outp
 
 export default defineEventHandler(async (event) => {
     const client = await serverSupabaseClient<Database>(event);
-    const session = await getUserSession(event);
     const runtimeConfig = useRuntimeConfig(event);
     const resend = new Resend(runtimeConfig.RESEND_API_KEY);
     // Parse form data
@@ -258,6 +262,7 @@ export default defineEventHandler(async (event) => {
 
         await userCheck(event);
 
+        let user = event.context.user;
         if (!screen_id) {
             return { msg: 'screen_id is required', status: 400 };
         }
@@ -266,7 +271,7 @@ export default defineEventHandler(async (event) => {
             .from('user_screens')
             .select('id')
             .eq('screen_id', screen_id)
-            .eq('user', (session.user as { id: string }).id)
+            .eq('user', (user as { id: string }).id)
             .neq('status', 'Expired')
             .single();
 
@@ -277,9 +282,9 @@ export default defineEventHandler(async (event) => {
         const { data: userMail, error: err } = await client
             .from('users')
             .select('email')
-            .eq('id', (session.user as { id: string }).id)
+            .eq('id', (user as { id: string }).id)
             .single();
-
+        event.node.res.end();
 
         let fileFinished;
         try {
@@ -302,7 +307,6 @@ export default defineEventHandler(async (event) => {
         }
         // Prepare prepend video
         let prependVideoPath = './screenerrors/prepend.mp4';
-        event.node.res.end();
         if(!fileFinished) return { status: 500 };
         let isntMp4 = fileFinished.originalFilename.split('.').pop() !== 'mp4';
         await preparePrependVideo(fileFinished.filepath, prependVideoPath, isntMp4, screen_id);
@@ -330,7 +334,12 @@ export default defineEventHandler(async (event) => {
             }
         } else {
             let temp = `./screens/${screen_id}/video_tmp.mp4`;
-            await mergeVideos(prependVideoPath, fileFinished.filepath, outputFilepath, temp, screen_id);
+            try {
+                await mergeVideos(prependVideoPath, fileFinished.filepath, outputFilepath, temp, screen_id);
+            } catch (error) {
+                fs.writeFile(`./screens/${screen_id}/error`, JSON.stringify(error));
+                return { status: 200 };
+            }
         }
         deleteChunks(screen_id);
         await fs.unlink(prependVideoPath);

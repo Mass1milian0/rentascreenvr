@@ -117,25 +117,24 @@ async function handleFile(event: Event) {
             formData.append('index', index.toString());
             formData.append('totalChunks', totalChunks.toString());
             formData.append('originalFileName', file.name);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 40 * 1000);
             try {
                 let response = await $fetch('/api/upload', {
                     method: 'POST',
                     body: formData,
-                    timeout: 40 * 1000
+                    signal: controller.signal
                 });
-                if (response.status == 200) {
-                    //do nothing, file is being uploaded
-                }
-                else {
+                clearTimeout(timeoutId);
+                if (response.status != 200) {
                     //retry the chunk
                     if (retries < 3) {
-                        await uploadChunk(chunk, index, retries + 1);
-                    } else {
                         throw new Error("Failed to upload the chunk") //automatically it will be caught by the catch block and retry the group
                     }
                 }
             }
             catch (e) {
+                clearTimeout(timeoutId);
                 if (retries < 3) {
                     await uploadChunk(chunk, index, retries + 1);
                 } else {

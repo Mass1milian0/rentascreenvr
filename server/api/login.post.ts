@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
         .single()
 
     //check if user exists
-    if (!users) {
+    if (!users || userError) {
         return { msg: 'user not found', status: 400 }
     }
 
