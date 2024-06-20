@@ -2,9 +2,7 @@
   <LandingContainer>
     <LandingSectionhead>
       <template v-slot:title>Verify your mail address</template>
-      <template v-slot:desc
-        >please check your inbox for a verification mail.</template
-      >
+      <template v-slot:desc>Please check both your Inbox and Spam folders for the account verification email.</template>
     </LandingSectionhead>
   </LandingContainer>
 </template>
