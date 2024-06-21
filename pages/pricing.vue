@@ -28,7 +28,7 @@ const pricing = [
   <LandingContainer>
     <LandingSectionhead>
       <template v-slot:title>Pricing</template>
-      <template v-slot:desc>Simple & Predictable pricing.<br>No Surprises.</template>
+      <template v-slot:desc>Simple & Predictable Pricing.<br>No Surprises.</template>
     </LandingSectionhead>
 
     <div class="grid md:grid-cols-1 gap-10 mx-auto max-w-screen-lg mt-12">
