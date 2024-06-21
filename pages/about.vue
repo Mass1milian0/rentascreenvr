@@ -18,7 +18,7 @@ const team = [
   },
   {
     name: 'SlyTheFloof',
-    title: 'Operation manager',
+    title: 'Operations Manager',
     avatar: {
       src: TeamImg2,
       width: 400,

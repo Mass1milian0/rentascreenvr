@@ -3,7 +3,7 @@
         <div class="flex flex-col gap-10 justify-center min-w-full">
             <div class="text-center min-w-full border-b-[1px] rounded">
                 <div class="mb-2">
-                    <h1 class="text-lg text-gray-100">Welcome back {{ user.username }}!</h1>
+                    <h1 class="text-lg text-gray-100">Welcome back {{user.username}}!</h1>
                     <h2 class="text-base text-gray-300">Here you can control your screens and your account</h2>
                 </div>
             </div>
@@ -15,7 +15,7 @@
                         v-for="screen of userScreens" @refreshList="refetchUserScreens" />
                 </div>
                 <div v-if="!userScreens || Object.keys(userScreens).length === 0" class="text-gray-300 flex flex-wrap justify-center mt-2 mb-2">
-                    <p>You have no screens</p>
+                    <p>You currently have no Screens.<br>Consider getting one <a href="/purchase" class="text-blue-600">here</a>?</p>
                 </div>
             </div>
         </div>
