@@ -15,7 +15,7 @@
                         v-for="screen of userScreens" @refreshList="refetchUserScreens" />
                 </div>
                 <div v-if="!userScreens || Object.keys(userScreens).length === 0" class="text-gray-300 flex flex-wrap justify-center mt-2 mb-2">
-                    <p>You currently have no Screens.<br>Consider getting one <a href="/purchase" class="text-blue-600">here</a>?</p>
+                    <p>You currently have no Screens.</p>
                 </div>
             </div>
         </div>
