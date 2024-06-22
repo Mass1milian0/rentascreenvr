@@ -15,7 +15,7 @@
                         v-for="screen of userScreens" @refreshList="refetchUserScreens" />
                 </div>
                 <div v-if="!userScreens || Object.keys(userScreens).length === 0" class="text-gray-300 flex flex-wrap justify-center mt-2 mb-2">
-                    <p>You currently have no Screens.</p>
+                    <p>You currently have no Screens.<br><NuxtLink to="/purchase" class="text-blue-600">Click Here To Get One</NuxtLink></p>
                 </div>
             </div>
         </div>

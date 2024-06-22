@@ -25,9 +25,9 @@
         <img src="~/assets/img/hero.png" alt="Rent a screen" class="w-4/12 h-fit" />
       </div>
       <div v-else class="flex flex-col justify-center items-center">
-        <h2 class="text-xl font-bold">hey we are really sorry to tell you this</h2>
-        <p class="text-sm font-thin">we know it's annoying but you need to login before you can rent a screen</p>
-        <p class="text-sm font-thin">if you bought a screen without an account we wouldn't know to who give the screen
+        <h2 class="text-xl font-bold">Hey We Are Really Sorry To Tell You This</h2>
+        <p class="text-sm font-thin">We know it's annoying but you need to login before you can Rent A Screen</p>
+        <p class="text-sm font-thin">if you bought a screen now without an account we wouldn't know to who give the screen.
         </p>
         <div class="flex items-center mt-3 gap-4">
           <LandingLink href="/login" styleName="muted" class="h-10 border-0" size="md">Log in</LandingLink>

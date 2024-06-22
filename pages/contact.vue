@@ -30,13 +30,13 @@ if (route.query.screen) {
           Contact Rent A Screen VR Creator
         </h2>
         <p class="text-lg leading-relaxed text-slate-500 mt-3">
-          Have something to say? I am here to help. Fill up the form or send
+          Have something to say?<br>I am here to help.<br>Fill up the form or send
           email.
         </p>
         <div class="mt-5">
           <div class="flex items-center mt-2 space-x-2 text-gray-600">
             <Icon class="text-gray-400 w-4 h-4" name="uil:map-marker" />
-            <span>20-22 Wenlock Road,London</span>
+            <span>20-22 Wenlock Rd London N1 7GU, UK</span>
           </div>
           <div class="flex items-center mt-2 space-x-2 text-gray-600">
             <Icon class="text-gray-400 w-4 h-4" name="uil:envelope" /><a href="mailto:massimilianobiondi07@gmail.com"
