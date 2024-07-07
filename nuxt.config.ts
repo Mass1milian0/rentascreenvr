@@ -35,15 +35,6 @@ export default defineNuxtConfig({
       link: [{ rel: 'icon', type: 'image/png', href: "/favicon.png" }]
     }
   },
-  vite:{
-    build:{
-      rollupOptions:{
-        input:{
-          additional: '/screenerrors'
-        }
-      }
-    }
-  },
   devtools: { enabled: true },
   css: ["~/assets/css/main.css"],
   postcss: {
