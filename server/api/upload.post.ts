@@ -27,14 +27,14 @@ function getVideoMetadata(filePath: string): Promise<ffmpeg.FfprobeData> {
         });
     });
 }
-async function createCheckLockfile(screen_id: string | string[] | undefined) {
+async function createCheckLockfile(screen_id: string | string[] | undefined, lockName: string = 'lock') {
     try {
-        await fs.access(`./screens/${screen_id}/lock`);
+        await fs.access(`./screens/${screen_id}/${lockName}`);
         console.log('Lockfile exists, skipping');
         return false;
     }
     catch (error) {
-        await fs.writeFile(`./screens/${screen_id}/lock`, '');
+        await fs.writeFile(`./screens/${screen_id}/${lockName}`, '');
         return true;
     }
 }
@@ -130,7 +130,7 @@ async function mergeChunks(screen_id: string | string[] | undefined, totalChunks
 
 async function processVideoAndMerge(prependVideoPath: string, fileFinished: { filepath: string, originalFilename: string }, outputFilepath: string, screen_id: string | string[] | undefined, originalFilename: string) {
     if (await createCheckLockfile(screen_id) === false) return { status: 200 };
-    try{
+    try {
         await new Promise<void>((resolve, reject) => {
             ffmpeg()
                 .input(prependVideoPath)
@@ -173,7 +173,7 @@ async function processVideoAndMerge(prependVideoPath: string, fileFinished: { fi
                 })
                 .save(outputFilepath);
         });
-    } catch (error : any) {
+    } catch (error: any) {
         //create a error file with the error message
         await fs.writeFile(`./screens/${screen_id}/error`, JSON.stringify(error));
         return
@@ -259,6 +259,8 @@ export default defineEventHandler(async (event) => {
 
     const filesInFolder = await fs.readdir(`./screens/${screen_id}`);
     if (filesInFolder.length === totalChunks) {
+        if(await createCheckLockfile(screen_id, 'mergeLock') === false) return { status: 200 };
+        //to avoid race conditions, check if the lock file exists, if it does, return
 
         await userCheck(event);
 
@@ -307,7 +309,7 @@ export default defineEventHandler(async (event) => {
         }
         // Prepare prepend video
         let prependVideoPath = './screenerrors/prepend.mp4';
-        if(!fileFinished) return { status: 500 };
+        if (!fileFinished) return { status: 500 };
         let isntMp4 = fileFinished.originalFilename.split('.').pop() !== 'mp4';
         await preparePrependVideo(fileFinished.filepath, prependVideoPath, isntMp4, screen_id);
         prependVideoPath = `./screens/${screen_id}/prepend_prepared.mp4`;
@@ -320,7 +322,7 @@ export default defineEventHandler(async (event) => {
         });
         if (isntMp4) {
             await processVideoAndMerge(prependVideoPath, fileFinished, outputFilepath, screen_id, originalFilename);
-            let email_template : string = await useStorage('assets:server').getItem('email_template.html') ?? 'your video is ready! <a href="{{screenLink}}">Click here to view</a>';
+            let email_template: string = await useStorage('assets:server').getItem('email_template.html') ?? 'your video is ready! <a href="{{screenLink}}">Click here to view</a>';
             //in the email template, replace the placeholders that are defined by {{}} with the actual values
             //replace all screenLink with the actual screen link
             email_template = email_template.replace(/{{screenLink}}/g, `https://rentascreenvr.com/screens/${screen_id}`);
@@ -343,6 +345,8 @@ export default defineEventHandler(async (event) => {
         }
         deleteChunks(screen_id);
         await fs.unlink(prependVideoPath);
+        //remove the lockmerge
+        await fs.unlink(`./screens/${screen_id}/mergeLock`);
         return;
     }
 
