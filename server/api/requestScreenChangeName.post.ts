@@ -1,11 +1,11 @@
 import screenCheck from "../middlewere/screenCheck"
 import userCheck from "../middlewere/userCheck"
-import { serverSupabaseClient } from '#supabase/server'
+import { serverSupabaseServiceRole } from '#supabase/server'
 import type { Database } from '~/server/supabase'
 
 export default defineEventHandler(async (event) => {
   //get post data
-  const client = await serverSupabaseClient<Database>(event)
+  const client = serverSupabaseServiceRole<Database>(event)
   const body = await readBody(event)
   const screen_id = body.screen_id
   const newName = body.new_name

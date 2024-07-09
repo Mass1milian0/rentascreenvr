@@ -1,10 +1,10 @@
-import { serverSupabaseClient } from '#supabase/server'
+import { serverSupabaseServiceRole } from '#supabase/server'
 import { Database } from '~/server/supabase'
 import { ServerResponse } from 'http';
 import  * as fs from 'fs'
 
 export default defineEventHandler(async (event) => {
-    const client = await serverSupabaseClient<Database>(event)
+    const client = serverSupabaseServiceRole<Database>(event)
     const res = event.node.res
     const req = event.node.req
     const root = process.cwd()

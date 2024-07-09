@@ -1,4 +1,4 @@
-import { serverSupabaseClient } from '#supabase/server'
+import { serverSupabaseServiceRole } from '#supabase/server'
 import type { Database } from '~/server/supabase'
 import Stripe from 'stripe';
 const runtimeConfig = useRuntimeConfig();
@@ -8,7 +8,7 @@ import { mkdir } from 'fs/promises';
 
 
 export default defineEventHandler(async (event) => {
-    const client = await serverSupabaseClient<Database>(event)
+    const client = serverSupabaseServiceRole<Database>(event)
     const root = process.cwd()
 
 

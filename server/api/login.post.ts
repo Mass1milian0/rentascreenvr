@@ -1,8 +1,9 @@
-import { serverSupabaseClient } from '#supabase/server'
+import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
 import type { Database } from '~/server/supabase'
 
 export default defineEventHandler(async (event) => {
   const client = await serverSupabaseClient<Database>(event)
+  const server = serverSupabaseServiceRole<Database>(event)
 
     //get post data
     const body = await readBody(event)
@@ -11,7 +12,7 @@ export default defineEventHandler(async (event) => {
     //username is inside public.users table the id inside public.users table is the same as the id inside auth.users table
 
     //from the username get the id, using the id get the email from auth.users table, all in one query
-    const { data: users, error: userError } = await client
+    const { data: users, error: userError } = await server
         .from('users')
         .select('email')
         .eq('username', body.username)

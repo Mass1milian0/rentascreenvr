@@ -1,8 +1,9 @@
-import { serverSupabaseClient } from '#supabase/server'
+import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
 import type { Database } from '~/server/supabase'
 
 export default defineEventHandler(async (event) => {
   const client = await serverSupabaseClient<Database>(event)
+  const server = serverSupabaseServiceRole<Database>(event)
 
   //get post data
   const body = await readBody(event)
@@ -24,7 +25,7 @@ export default defineEventHandler(async (event) => {
   }
 
   //check if username or mail or both are already taken
-  const { data: users, error } = await client
+  const { data: users, error } = await server
     .from('users')
     .select('id')
     .eq('username', body.username)
@@ -40,7 +41,7 @@ export default defineEventHandler(async (event) => {
     email: body.email,
     password: body.password,
     options: {
-      emailRedirectTo: 'https://rentascreenvr.com',
+      emailRedirectTo: 'https://www.rentascreenvr.com',
     }
   })
 

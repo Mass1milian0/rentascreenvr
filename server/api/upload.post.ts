@@ -2,7 +2,7 @@ import formidable from "formidable";
 import * as fs from 'fs/promises';
 import ffmpeg from 'fluent-ffmpeg';
 import userCheck from '../middlewere/userCheck';
-import { serverSupabaseClient } from '#supabase/server';
+import { serverSupabaseServiceRole } from '#supabase/server';
 import type { Database } from '~/server/supabase';
 import child from 'child_process';
 import { Resend } from "resend";
@@ -209,7 +209,7 @@ async function mergeVideos(prependVideoPath: string, mainVideoPath: string, outp
 }
 
 export default defineEventHandler(async (event) => {
-    const client = await serverSupabaseClient<Database>(event);
+    const client = serverSupabaseServiceRole<Database>(event);
     const runtimeConfig = useRuntimeConfig(event);
     const resend = new Resend(runtimeConfig.RESEND_API_KEY);
     // Parse form data

@@ -62,8 +62,12 @@ const submitForm = async () => {
                 method: 'POST',
                 body: JSON.stringify(formData.value)
             })
-            await useUserSession().fetch();
-            navigateTo('/')
+            if(data.status === 400){
+                alert('login failed, check your credentials')
+            }else{
+                await useUserSession().fetch();
+                navigateTo('/')
+            }
         } catch (error) {
 
         }

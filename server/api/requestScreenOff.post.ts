@@ -1,10 +1,10 @@
-import { serverSupabaseClient } from '#supabase/server'
+import { serverSupabaseServiceRole } from '#supabase/server'
 import type { Database } from '~/server/supabase'
 import screenCheck from "../middlewere/screenCheck"
 import userCheck from "../middlewere/userCheck"
 
 export default defineEventHandler(async (event) => {
-  const client = await serverSupabaseClient<Database>(event)
+  const client = serverSupabaseServiceRole<Database>(event)
   //get post data
   const body = await readBody(event)
   const screen_id = body.screen_id
