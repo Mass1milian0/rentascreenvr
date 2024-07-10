@@ -11,7 +11,7 @@
         <div class="lg:grid-cols-2 grid gap-10 justify-items-center lg:justify-items-stretch">
           <ProfileScreen :nogoto="true" :expires="calculateTimeFromToday(screenData.expires_in)"
             :screenName="screenData.name" :onlineState="screenData.status === 'Online' ? true : false"
-            @refreshList="refetchUserScreens" :screenId=screenData.screen_id />
+            @refreshList="refresh()" :screenId=screenData.screen_id />
           <div class="mt-10 flex flex-col gap-4 min-w-full items-stretch">
             <Button @click="dialog = true">Change name</Button>
             <ModalDialog :open="dialog" @close="dialog = false">
@@ -48,7 +48,6 @@ definePageMeta({
   layout: "landing",
 });
 let { loggedIn, user, session, fetch, clear } = useUserSession();
-const supabase = useSupabaseClient()
 let screenFound = ref(false)
 let screenData = ref()
 let dialog = ref(false)
@@ -66,6 +65,9 @@ if (Array.isArray(route.params.screenid)) {
   // If it's a string, use it directly
   screenId.value = route.params.screenid;
 }
+const { data, status, error, refresh } = await useFetch(`/api/getScreen/${screenId.value}`)
+screenFound.value = data ? true : false
+screenData.value = (data.value as any).screens
 if (route.query.regen) {
   regenText.value = 'Link Regenerated'
   regenClasses.value = 'border border-green-600 rounded p-1 bg-green-600 text-gray-100'
@@ -76,34 +78,11 @@ if (route.query.regen) {
   }, 5000)
 }
 if (loggedIn) {
-  //if screen exists, belongs to user and status isn't 'expired'
-  const { data, pending, error, refresh } = await useAsyncData('screenFetch', async () => {
-    let { data, error } = await supabase.from('user_screens').select('*').eq('user', user.value.id).eq('screen_id', screenId.value).neq('status', 'Expired').single();
-    if (error) {
-      console.error(error)
-    } else {
-      if (data) {
-        screenFound.value = true
-        screenData.value = data
-      } else {
-        screenFound.value = false
-      }
-    }
-  })
+  refresh()
+  screenFound.value = data ? true : false
+  screenData.value = (data.value as any).screens
 }
-async function refetchUserScreens() {
-  let { data, error } = await supabase.from('user_screens').select('*').eq('user', user.value.id).eq('screen_id', screenId.value).neq('status', 'Expired').single();
-  if (error) {
-    console.error(error)
-  } else {
-    if (data) {
-      screenFound.value = true
-      screenData.value = data
-    } else {
-      screenFound.value = false
-    }
-  }
-}
+
 async function requestScreenReset(){
   let res = await $fetch('/api/requestScreenReset', {
     method: 'POST',
@@ -157,7 +136,7 @@ async function sendNewScreenName() {
     })
   })
   dialog.value = false
-  refetchUserScreens()
+  refresh()
 }
 
 async function requestLinkRegen() {

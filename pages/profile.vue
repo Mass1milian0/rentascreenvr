@@ -3,7 +3,7 @@
         <div class="flex flex-col gap-10 justify-center min-w-full">
             <div class="text-center min-w-full border-b-[1px] rounded">
                 <div class="mb-2">
-                    <h1 class="text-lg text-gray-100">Welcome back {{user.username}}!</h1>
+                    <h1 class="text-lg text-gray-100">Welcome back {{ user.username }}!</h1>
                     <h2 class="text-base text-gray-300">Here you can control your screens and your account</h2>
                 </div>
             </div>
@@ -12,10 +12,13 @@
                 <div class="lg:grid-cols-3 grid align-middle items-center gap-5">
                     <ProfileScreen :expires="calculateTimeFromToday(screen.expires_in)" :screenName=screen.name
                         :onlineState="screen.status === 'Online' ? true : false" :screenId=screen.screen_id
-                        v-for="screen of userScreens" @refreshList="refetchUserScreens" />
+                        v-for="screen of userScreens.value.screens" @refreshList="refresh()" />
                 </div>
-                <div v-if="!userScreens || Object.keys(userScreens).length === 0" class="text-gray-300 flex flex-wrap justify-center mt-2 mb-2">
-                    <p>You currently have no Screens.<br><NuxtLink to="/purchase" class="text-blue-600">Click Here To Get One</NuxtLink></p>
+                <div v-if="!userScreens || Object.keys(userScreens).length === 0"
+                    class="text-gray-300 flex flex-wrap justify-center mt-2 mb-2">
+                    <p>You currently have no Screens.<br>
+                        <NuxtLink to="/purchase" class="text-blue-600">Click Here To Get One</NuxtLink>
+                    </p>
                 </div>
             </div>
         </div>
@@ -29,9 +32,13 @@ definePageMeta({
 });
 const supabase = useSupabaseClient()
 let { loggedIn, user, session, fetch, clear } = useUserSession();
+const { data, status, error, refresh } = await useFetch('/api/getUserScreen')
+
 let userScreens = ref()
+userScreens.value = data
 if (loggedIn) {
-    refetchUserScreens()
+    refresh()
+    userScreens.value = data
 }
 function calculateTimeFromToday(inputDateIso: string) {
     // Parse the input ISO date and the current date
@@ -57,19 +64,6 @@ function calculateTimeFromToday(inputDateIso: string) {
     }
 }
 
-async function refetchUserScreens(tries : number = 0) {
-    let { data, error } = await supabase.from('user_screens').select('*').eq('user', user.value.id).neq('status', 'Expired')
-    if (error) {
-        console.error(error)
-        if (tries < 3) {
-            refetchUserScreens(tries + 1)
-        }else {
-            console.error("Failed to fetch user screens")
-        }
-    } else {
-        userScreens.value = data
-    }
-}
 
 </script>
 

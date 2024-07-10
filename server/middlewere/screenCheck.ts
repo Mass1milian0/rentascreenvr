@@ -1,4 +1,4 @@
-import { serverSupabaseClient } from '#supabase/server'
+import { serverSupabaseServiceRole } from '#supabase/server'
 import type { Database } from '~/server/supabase'
 
 export default defineEventHandler(async (event) => {
@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
         return { msg: 'screen_id is required', status: 400 }
     }
 
-    const client = await serverSupabaseClient<Database>(event)
+    const client = serverSupabaseServiceRole<Database>(event)
     const session = await getUserSession(event)
     const userid = (session.user as { id?: string })?.id || '000'
 
