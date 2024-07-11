@@ -7,7 +7,8 @@ import type { Database } from '~/server/supabase';
 import child from 'child_process';
 import { Resend } from "resend";
 
-ffmpeg.setFfmpegPath('/usr/bin/ffmpeg');
+// /usr/bin/ffmpeg
+ffmpeg.setFfmpegPath('/usr/bin/ffmpeg'); //"C:/Program Files/FFmpeg/bin/ffmpeg.exe"
 
 export const config = {
     api: {
