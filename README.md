@@ -1,6 +1,6 @@
 # RentAScreenVR
 
-Introduction
+## Introduction
 RentAScreenVR is a project built using Vue, TypeScript, HTML, and CSS. This application enables users to rent virtual screens in a VR environment. The project leverages Nuxt 3 Minimal Starter for its framework, providing a solid foundation for scalable and high-performance web applications.
 
 Built with
